@@ -1,224 +1,102 @@
-# 🌊 Sistem Prediksi Kerawanan Banjir DIY
+### 📝 Panduan Persiapan
 
-Sistem Informasi Geografis untuk prediksi kerawanan banjir di Daerah Istimewa Yogyakarta menggunakan Machine Learning (Random Forest Regressor).
+Sebelum memulai, pastikan komputer Anda sudah memiliki:
+*   **Git**: Untuk mengunduh (clone) repositori dari GitHub.
+*   **Python**: Proyek ini menggunakan Python. Versi yang paling umum dan stabil digunakan adalah **Python 3.8, 3.9, 3.10, atau 3.11**. Anda bisa cek dengan mengetik `python --version` atau `python3 --version` di terminal atau command prompt.
+*   **pip**: Manajer paket untuk Python. Biasanya sudah termasuk dalam instalasi Python.
+*   **MySQL Server**: Aplikasi ini membutuhkan database MySQL. Anda bisa mengunduh dan menginstalnya dari situs resmi MySQL.
+*   **Command Line Interface (CLI)**: Seperti Terminal (macOS/Linux), Command Prompt, atau PowerShell (Windows).
 
-## 📋 Daftar Isi
-- [Setup](#setup)
-- [Konfigurasi Database](#konfigurasi-database)
-- [Menjalankan Aplikasi](#menjalankan-aplikasi)
-- [API Endpoints](#api-endpoints)
-- [Struktur Direktori](#struktur-direktori)
+---
 
-## 🚀 Setup
+### 🚀 Panduan Langkah demi Langkah
 
-### Prerequisites
-- Python 3.8+
-- MySQL 8.0+
-- Git
-
-### 1. Clone Repository
+#### **1. Clone Repository**
+Langkah pertama adalah menyalin proyek ini ke komputer Anda. Buka terminal/CMD dan jalankan perintah berikut:
 ```bash
 git clone https://github.com/GhaniPutra/flood-prediction-app.git
+```
+Kemudian, masuk ke direktori proyek:
+```bash
 cd flood-prediction-app
 ```
 
-### 2. Setup Virtual Environment
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# atau
-venv\Scripts\activate  # Windows
-```
+#### **2. Siapkan Lingkungan Virtual (Virtual Environment)**
+Menggunakan lingkungan virtual adalah praktik yang baik untuk mengisolasi dependensi proyek agar tidak bentrok dengan proyek Python lain di komputer Anda.
 
-### 3. Install Dependencies
+*   **Buat virtual environment:**
+    ```bash
+    python -m venv venv
+    ```
+*   **Aktifkan virtual environment:**
+    *   **Windows:**
+        ```bash
+        venv\Scripts\activate
+        ```
+    *   **macOS / Linux:**
+        ```bash
+        source venv/bin/activate
+        ```
+    Setelah diaktifkan, Anda akan melihat `(venv)` di awal baris terminal Anda.
+
+#### **3. Instal Dependensi Python**
+Proyek ini mencantumkan semua paket Python yang dibutuhkan dalam file `requirements.txt`. Gunakan `pip` untuk menginstalnya sekaligus di dalam virtual environment yang telah aktif.
 ```bash
 pip install -r requirements.txt
 ```
+Perintah ini akan menginstal library seperti **Flask** (framework web), **scikit-learn** (untuk model machine learning), **pandas** (untuk memproses data), dan lainnya.
 
-### 4. Setup Environment Variables
-Copy `.env.example` ke `.env` dan sesuaikan konfigurasi:
-```bash
-cp .env.example .env
+#### **4. Siapkan Database MySQL**
+Aplikasi ini menggunakan database MySQL untuk menyimpan data. File `migrasi_flood_prediksi.sql` berisi struktur tabel yang diperlukan.
+
+1.  **Buat database baru** di MySQL server Anda, misalnya dengan nama `flood_prediksi_db`.
+2.  **Impor struktur tabel**: Buka terminal MySQL atau gunakan tool seperti phpMyAdmin, lalu jalankan perintah:
+    ```sql
+    SOURCE /path/ke/proyek/anda/migrasi_flood_prediksi.sql;
+    ```
+    Atau, jika melalui command line, Anda bisa langsung mengimpor file-nya:
+    ```bash
+    mysql -u username -p nama_database < migrasi_flood_prediksi.sql
+    ```
+    Ganti `username` dan `nama_database` sesuai dengan konfigurasi MySQL Anda.
+
+#### **5. Konfigurasi Koneksi Database**
+Aplikasi perlu tahu cara terhubung ke database yang telah dibuat. Biasanya, informasi ini disimpan dalam file konfigurasi seperti `.env` atau langsung di file `app.py`. Lihatlah file `app.py` untuk mencari baris yang berisi konfigurasi koneksi, mirip seperti ini:
+```python
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://username:password@localhost/db_name'
 ```
+Ubah bagian `username`, `password`, dan `db_name` sesuai dengan kredensial MySQL Anda.
 
-Edit `.env` dengan credentials MySQL Anda:
-```
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=flood_prediksi
-DB_PORT=3306
-```
-
-## 🗄️ Konfigurasi Database
-
-### 1. Create Database & Tables
-Jalankan SQL migration di phpMyAdmin atau via CLI:
-```bash
-mysql -u root -p < migrasi_flood_prediksi.sql
-```
-
-### 2. Verify Database Connection
-```bash
-python -c "from app import get_db_connection; c = get_db_connection(); print('✓ Connected' if c else '✗ Failed')"
-```
-
-## ▶️ Menjalankan Aplikasi
-
-### Development Mode
-```bash
-source venv/bin/activate
-python app.py
-```
-
-Aplikasi akan running di `http://localhost:5000`
-
-### Production Mode
-```bash
-export FLASK_ENV=production
-python app.py
-```
-
-## 📡 API Endpoints
-
-### 1. GET `/` - Homepage
-Menampilkan interface aplikasi dengan peta interaktif.
-
-### 2. GET `/features` - Daftar Fitur
-```bash
-curl http://localhost:5000/features
-```
-
-Response:
-```json
-{
-  "count": 20,
-  "features": ["MonsoonIntensity", "TopographyDrainage", ...],
-  "model_status": "loaded"
-}
-```
-
-### 3. POST `/predict` - Prediksi Banjir
-Mengirim 20 fitur untuk mendapat prediksi.
-
-**Request:**
-```bash
-curl -X POST http://localhost:5000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "MonsoonIntensity": 5,
-    "TopographyDrainage": 8,
-    "RiverManagement": 6,
-    ... (18 fitur lainnya)
-  }'
-```
-
-**Response:**
-```json
-{
-  "flood_probability": 0.5088,
-  "risk_zone": "Tinggi",
-  "status": "success"
-}
-```
-
-## 📁 Struktur Direktori
-
-```
-flood-prediction-app/
-├── app.py                      # Main Flask application
-├── config.py                   # Configuration & settings
-├── train_model.py              # Model training script
-├── test_api.py                 # API test script
-├── requirements.txt            # Python dependencies
-├── .env                        # Environment variables (ignored)
-├── .env.example                # Environment template
-├── .gitignore                  # Git ignore rules
-│
-├── models/
-│   ├── flood_predictor.pkl     # Trained Random Forest model
-│   ├── flood_scaler.pkl        # Feature scaler
-│   └── feature_importance.csv  # Feature importance scores
-│
-├── data/
-│   ├── flood.csv               # Real dataset (50k records)
-│   └── dummy_flood_data.csv    # Dummy data
-│
-├── static/
-│   ├── css/
-│   │   └── style.css           # Styling
-│   ├── js/
-│   │   └── main.js             # Frontend logic
-│   └── data/
-│       └── yogyakarta.geojson  # GeoJSON untuk peta
-│
-├── templates/
-│   └── index.html              # Main HTML template
-│
-└── migrasi_flood_prediksi.sql  # Database schema
-```
-
-## 🤖 Model Info
-
-**Algoritma:** Random Forest Regressor
-- **Estimators:** 100 trees
-- **Max Depth:** 15
-- **Training Data:** 50,000 samples
-- **Features:** 20 (monsun, topografi, urbanisasi, dll)
-- **Target:** Flood Probability (0-1)
-
-**Performance:**
-- Training R² Score: 0.9220
-- Testing R² Score: 0.7104
-- RMSE: 0.0269
-- MAE: 0.0212
-
-## 🗺️ Peta Interaktif
-
-Aplikasi menggunakan **Leaflet.js** dengan CartoDB basemap.
-Warna peta berubah sesuai risk zone:
-- 🟢 Hijau: Rendah (≤0.35)
-- 🟡 Orange: Sedang (0.35-0.50)
-- 🔴 Merah: Tinggi (0.50-0.75)
-- 🟣 Merah Gelap: Sangat Tinggi (>0.75)
-
-## 📊 Database Schema
-
-### Tabel: `kecamatan`
-Master data wilayah administrasi.
-
-### Tabel: `data_historis`
-Data historis untuk training model.
-
-### Tabel: `model_coefficients`
-Koefisien hasil training model.
-
-### Tabel: `prediksi`
-Log hasil prediksi dari pengguna.
-
-### Tabel: `user_log`
-Log aktivitas admin.
-
-## 🔧 Development Tips
-
-### Train Model dengan Data Baru
+#### **6. (Opsional) Latih Ulang Model Machine Learning**
+Jika Anda ingin melatih ulang model prediksi menggunakan data terbaru di `data/flood.csv`, Anda bisa menjalankan file `train_model.py`:
 ```bash
 python train_model.py
 ```
+Skrip ini akan menghasilkan file model (`flood_predictor.pkl`) dan `scaler` (`flood_scaler.pkl`) baru di dalam folder `models/`.
 
-### Test API
+#### **7. Jalankan Aplikasi Web**
+Untuk memulai server web dan menjalankan aplikasi, Anda perlu menjalankan file `app.py`.
 ```bash
-python test_api.py
+python app.py
 ```
+Jika berhasil, Anda akan melihat pesan seperti ini di terminal:
+```text
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+```
+Buka browser web Anda dan kunjungi alamat `http://127.0.0.1:5000` untuk mulai menggunakan aplikasi prediksi banjir.
 
-### Debug Mode
-Set `DEBUG=True` di `.env` untuk hot-reload.
+---
 
-## 📝 License
-MIT License
+### ⚠️ Tips Penting untuk Kelancaran Proyek
 
-## 👤 Author
-Ghani Putra
+*   **Pastikan Port 5000 Tersedia**: Aplikasi Flask biasanya berjalan di port 5000. Jika port ini sedang digunakan oleh program lain (misalnya, AirPlay Receiver di macOS), Anda bisa menghentikan program tersebut atau mengganti port di file `app.py`.
+*   **Periksa Kembali Dependensi**: Jika ada error saat instalasi, pastikan `pip` Anda sudah versi terbaru dengan menjalankan `python -m pip install --upgrade pip`. Jika instalasi berjalan lambat, Anda bisa menggunakan server cermin (mirror) dengan perintah `pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple`.
+*   **Gunakan Akun MySQL yang Tepat**: Pastikan akun MySQL yang Anda gunakan memiliki hak akses penuh (`ALL PRIVILEGES`) untuk database `flood_prediksi_db`.
+*   **Uji Coba API**: Setelah aplikasi berjalan, Anda bisa menguji fungsionalitas API-nya secara terpisah dengan menjalankan `python test_api.py` di terminal baru (pastikan server utama masih berjalan).
+*   **Struktur Direktori Penting**: Memahami struktur folder proyek akan memudahkan jika terjadi error:
+    *   `app.py`: File utama untuk menjalankan aplikasi web.
+    *   `templates/`: Berisi file HTML (seperti `index.html`) untuk tampilan antarmuka pengguna.
+    *   `static/`: Menyimpan file pendukung seperti CSS dan JavaScript.
+    *   `models/`: Tempat file model (`flood_predictor.pkl`) dan `scaler` (.pkl) disimpan.
+    *   `data/`: Menyimpan file data historis (`flood.csv`) yang digunakan untuk melatih model.
 
-## 📧 Contact
-Email: ghaniputra@example.com
